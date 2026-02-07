@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hikari Path</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="app">
+      <header class="hero">
+        <div class="hero__badge">Hikari Path</div>
+        <h1>注意の向け先を、やさしく肯定的に。</h1>
+        <p>
+          繊細で想像力が豊かなあなたへ。東洋思想の知恵で、心の光が向く先を整え、
+          ワクワクする現実を選び直すための道しるべです。
+        </p>
+        <div class="hero__actions">
+          <button class="primary" id="startJourney">今ここから始める</button>
+          <button class="ghost" id="openGuide">3つの核心を見る</button>
+        </div>
+        <div class="hero__stats">
+          <div>
+            <span>所要時間</span>
+            <strong>7分</strong>
+          </div>
+          <div>
+            <span>今日のテーマ</span>
+            <strong id="themeText">静かな明晰さ</strong>
+          </div>
+          <div>
+            <span>集中対象</span>
+            <strong id="focusText">呼吸と感覚</strong>
+          </div>
+        </div>
+      </header>
+
+      <section class="panel" id="intentPanel">
+        <div class="panel__header">
+          <h2>1. 意図を静かに置く</h2>
+          <span class="panel__sub">どんな世界線に心を向ける？</span>
+        </div>
+        <div class="intent">
+          <label for="intentInput">今日の肯定的な注意の向け先を言葉にしてみる</label>
+          <textarea
+            id="intentInput"
+            placeholder="例：私は柔らかな集中の中で、自分にも人にも優しい選択をしている。"
+          ></textarea>
+          <div class="intent__footer">
+            <span id="intentStatus">まだ設定されていません</span>
+            <button class="primary" id="saveIntent">意図をそっと確定</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__header">
+          <h2>2. 体感のチューニング</h2>
+          <span class="panel__sub">内側の静けさを広げる</span>
+        </div>
+        <div class="freedom">
+          <input type="range" id="freedomRange" min="0" max="100" value="70" />
+          <div class="freedom__labels">
+            <span>静寂</span>
+            <strong id="freedomValue">70%</strong>
+            <span>拡張</span>
+          </div>
+          <p id="freedomMessage">十分に開いています。静けさの中で光を保ちましょう。</p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__header">
+          <h2>3. 今日のワクワク実践</h2>
+          <span class="panel__sub">選んだ行動が世界線を動かす</span>
+        </div>
+        <div class="practice-grid" id="practiceGrid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__header">
+          <h2>やさしい7分ロードマップ</h2>
+          <span class="panel__sub">注意を肯定的に調律する順番</span>
+        </div>
+        <ol class="roadmap" id="roadmap"></ol>
+      </section>
+
+      <section class="panel">
+        <div class="panel__header">
+          <h2>光のジャーナル</h2>
+          <span class="panel__sub">気づきを言葉にし、現実に定着させる</span>
+        </div>
+        <div class="journal">
+          <textarea
+            id="journalInput"
+            placeholder="今の身体感覚・気づき・ワクワクの芽を言葉にしてみよう。"
+          ></textarea>
+          <div class="journal__footer">
+            <span id="journalStatus">まだ保存されていません</span>
+            <button class="primary" id="saveJournal">気づきを保存</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel guide" id="guidePanel">
+        <div class="panel__header">
+          <h2>東洋思想の3つの核心</h2>
+          <span class="panel__sub">繊細な感性を守り、肯定的に整える</span>
+        </div>
+        <div class="guide__content">
+          <article>
+            <h3>今ここ (Presence)</h3>
+            <p>現在の感覚に戻るほど、想像力はやさしく透明になる。</p>
+          </article>
+          <article>
+            <h3>意図 (Intention)</h3>
+            <p>望む世界線を明確に置くことで、注意の矢印が肯定的に向く。</p>
+          </article>
+          <article>
+            <h3>調和 (Harmony)</h3>
+            <p>自分と周囲を同時に満たす行動が、最も軽やかな未来を育てる。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel closing">
+        <h2>今日のひとこと</h2>
+        <p id="closingMessage">
+          「私は、やさしい確信をまとって一日を歩んでいる。」
+        </p>
+        <button class="ghost" id="refreshMessage">別の言葉に出会う</button>
+      </section>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
