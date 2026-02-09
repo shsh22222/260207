@@ -1,125 +1,18 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Parallel World Flow</title>
-    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>行動変容トラッカー</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      * { font-family: 'Noto Sans JP', sans-serif; }
+    </style>
   </head>
-  <body>
-    <div class="app">
-      <header class="hero">
-        <div class="hero__badge">Parallel World Flow</div>
-        <h1>自由度を最大化するパラレルワールド・ナビ</h1>
-        <p>
-          トランサーフィン、チョプラ、エックハルト・トール、サドグルの智慧を、
-          今ここで実践できる習慣に変換。意識の質を整え、最も自由な世界線へ。
-        </p>
-        <div class="hero__actions">
-          <button class="primary" id="startJourney">今すぐフローを起動</button>
-          <button class="ghost" id="openGuide">思想ガイドを読む</button>
-        </div>
-      </header>
-
-      <section class="panel" id="intentPanel">
-        <div class="panel__header">
-          <h2>意図スイッチ</h2>
-          <span class="panel__sub">望む現実に意識を合わせる</span>
-        </div>
-        <div class="intent">
-          <label for="intentInput">今日の最高の世界線を言葉で描写</label>
-          <textarea
-            id="intentInput"
-            placeholder="例：私は軽やかな集中の中で、仕事と遊びの両方を満たしている。"
-          ></textarea>
-          <div class="intent__footer">
-            <span id="intentStatus">まだ設定されていません</span>
-            <button class="primary" id="saveIntent">意図を確定</button>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="panel__header">
-          <h2>自由度レベル</h2>
-          <span class="panel__sub">身体感覚でチューニング</span>
-        </div>
-        <div class="freedom">
-          <input type="range" id="freedomRange" min="0" max="100" value="68" />
-          <div class="freedom__labels">
-            <span>静寂</span>
-            <strong id="freedomValue">68%</strong>
-            <span>拡張</span>
-          </div>
-          <p id="freedomMessage">十分に開いています。意識の余白をさらに広げてみましょう。</p>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="panel__header">
-          <h2>今日のプラクティス</h2>
-          <span class="panel__sub">4人のマスターから1つ選択</span>
-        </div>
-        <div class="practice-grid" id="practiceGrid"></div>
-      </section>
-
-      <section class="panel">
-        <div class="panel__header">
-          <h2>パラレルワールド・ロードマップ</h2>
-          <span class="panel__sub">小さな行動が世界線を変える</span>
-        </div>
-        <ol class="roadmap" id="roadmap"></ol>
-      </section>
-
-      <section class="panel">
-        <div class="panel__header">
-          <h2>インナージャーナル</h2>
-          <span class="panel__sub">今の気づきを固定化</span>
-        </div>
-        <div class="journal">
-          <textarea
-            id="journalInput"
-            placeholder="今の身体感覚・感情・直感を言葉にしてみよう。"
-          ></textarea>
-          <div class="journal__footer">
-            <span id="journalStatus">まだ保存されていません</span>
-            <button class="primary" id="saveJournal">ジャーナルを保存</button>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel guide" id="guidePanel">
-        <div class="panel__header">
-          <h2>根底思想のエッセンス</h2>
-          <span class="panel__sub">今ここ・意図・波動・奉仕</span>
-        </div>
-        <div class="guide__content">
-          <article>
-            <h3>トランサーフィン</h3>
-            <p>世界線を選ぶのは意図。外側の反応より内側の周波数を優先する。</p>
-          </article>
-          <article>
-            <h3>チョプラ</h3>
-            <p>内なる静寂に戻るほど、創造性と偶然が自然に一致する。</p>
-          </article>
-          <article>
-            <h3>エックハルト・トール</h3>
-            <p>今この瞬間だけが現実。思考の物語を手放すと自由が拡張する。</p>
-          </article>
-          <article>
-            <h3>サドグル</h3>
-            <p>内側が整えば外側は追随する。日常にヨガ的な意識を持ち込む。</p>
-          </article>
-        </div>
-      </section>
-    </div>
-
-    <script src="app.js"></script>
+  <body class="bg-slate-50">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
