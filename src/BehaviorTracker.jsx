@@ -4,29 +4,30 @@ import {
   Target, Flame, ChevronRight, Plus, Send, ThumbsUp, Reply,
   Calendar, TrendingUp, Award, Bell, Star, Clock, BookOpen,
   ArrowRight, X, Check, AlertCircle, Sparkles, Heart,
-  Users, PenLine, Archive, RefreshCw
+  Users, PenLine, Archive, RefreshCw, LogIn, LogOut, Wifi, WifiOff
 } from 'lucide-react';
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell
 } from 'recharts';
+import api from './api.js';
 
-// ─── Mock Data ──────────────────────────────────────────
-const USER = { name: '田中 太郎', training: '次世代リーダー育成プログラム', startDate: '2025-01-15' };
+// ─── Mock Data (fallback when no backend) ───────────────
+const MOCK_USER = { name: '田中 太郎', training_name: '次世代リーダー育成プログラム', training_start_date: '2025-01-15' };
 
-const INITIAL_GOALS = [
+const MOCK_GOALS = [
   { id: 1, title: 'チームメンバーの意見を最後まで聞いてから自分の意見を述べる', category: 'コミュニケーション', frequency: '毎日', period: '8週間', progress: 78, streak: 5 },
   { id: 2, title: '週1回、部下と15分の1on1を実施する', category: 'マネジメント', frequency: '週1回', period: '12週間', streak: 4, progress: 83 },
   { id: 3, title: '会議の冒頭でゴールとアジェンダを共有する', category: 'リーダーシップ', frequency: '週3回', period: '8週間', streak: 3, progress: 65 },
 ];
 
-const WEEKLY_DATA = [
+const MOCK_WEEKLY_DATA = [
   { week: '第1週', rate: 45 }, { week: '第2週', rate: 58 },
   { week: '第3週', rate: 62 }, { week: '第4週', rate: 70 },
   { week: '第5週', rate: 75 }, { week: '第6週', rate: 72 },
 ];
 
-const GOAL_CHART_DATA = [
+const MOCK_GOAL_CHART = [
   { name: '傾聴', rate: 78, fill: '#3b82f6' },
   { name: '1on1', rate: 83, fill: '#10b981' },
   { name: 'アジェンダ', rate: 65, fill: '#f59e0b' },
@@ -40,19 +41,28 @@ const NUDGE_MESSAGES = [
   '今週のテーマ：「問いかけ」を使ってメンバーの考えを引き出してみましょう。',
 ];
 
-const FEEDBACKS = [
-  { id: 1, from: '鈴木部長', date: '2025-02-24', message: '最近の会議での進行が格段に良くなっています。アジェンダの共有が習慣化されてきましたね。', likes: 2, replies: [{ from: '田中 太郎', message: 'ありがとうございます！意識して続けます。', date: '2025-02-24' }] },
-  { id: 2, from: '山田トレーナー', date: '2025-02-20', message: '1on1の実施率が高いですね。部下の佐藤さんから「最近上司が話を聞いてくれるようになった」と聞きました。素晴らしい変化です！', likes: 3, replies: [] },
-  { id: 3, from: '鈴木部長', date: '2025-02-15', message: '傾聴の姿勢が見えてきました。次のステップとして、相手の発言を要約してから自分の意見を述べる練習をしてみてください。', likes: 1, replies: [] },
+const MOCK_FEEDBACKS = [
+  { id: 1, from_name: '鈴木部長', created_at: '2025-02-24', message: '最近の会議での進行が格段に良くなっています。アジェンダの共有が習慣化されてきましたね。', likes: 2, replies: [{ from_name: '田中 太郎', message: 'ありがとうございます！意識して続けます。', created_at: '2025-02-24' }] },
+  { id: 2, from_name: '山田トレーナー', created_at: '2025-02-20', message: '1on1の実施率が高いですね。部下の佐藤さんから「最近上司が話を聞いてくれるようになった」と聞きました。素晴らしい変化です！', likes: 3, replies: [] },
+  { id: 3, from_name: '鈴木部長', created_at: '2025-02-15', message: '傾聴の姿勢が見えてきました。次のステップとして、相手の発言を要約してから自分の意見を述べる練習をしてみてください。', likes: 1, replies: [] },
 ];
 
-const TIPS_LIST = [
-  { id: 1, date: '2025-02-27', category: 'コミュニケーション', title: '傾聴の3ステップ', content: '①相手の目を見る ②相槌を打つ ③最後まで聞いてから要約する。この3つを意識するだけで、相手の「聞いてもらえた」という満足度が大きく変わります。' },
-  { id: 2, date: '2025-02-26', category: 'リーダーシップ', title: '会議を変える30秒', content: '会議の最初の30秒で「今日のゴール」と「終了時間」を伝えるだけで、参加者の集中力と満足度が向上します。試してみましょう。' },
-  { id: 3, date: '2025-02-25', category: 'マネジメント', title: '1on1を充実させるコツ', content: '1on1では「最近どう？」よりも「今週一番チャレンジングだったことは？」のような具体的な問いかけが効果的です。' },
-  { id: 4, date: '2025-02-24', category: 'コミュニケーション', title: '「Yes, and」の技法', content: '相手の意見に対して「でも」ではなく「そうですね、さらに」と受け止めてから自分の意見を加えると、建設的な議論になります。' },
-  { id: 5, date: '2025-02-23', category: 'リーダーシップ', title: 'ビジョンの言語化', content: 'チームの方向性を示すとき、抽象的な言葉より具体的なエピソードや数字を使うと、メンバーの共感と行動につながります。' },
-  { id: 6, date: '2025-02-22', category: 'マネジメント', title: 'フィードバックのサンドイッチ法', content: '良い点→改善点→期待の順で伝えると、相手が前向きに受け取りやすくなります。ただし、形式的にならないよう誠実さが大切です。' },
+const MOCK_TIPS = [
+  { id: 1, display_date: '2025-02-27', category: 'コミュニケーション', title: '傾聴の3ステップ', content: '①相手の目を見る ②相槌を打つ ③最後まで聞いてから要約する。この3つを意識するだけで、相手の「聞いてもらえた」という満足度が大きく変わります。' },
+  { id: 2, display_date: '2025-02-26', category: 'リーダーシップ', title: '会議を変える30秒', content: '会議の最初の30秒で「今日のゴール」と「終了時間」を伝えるだけで、参加者の集中力と満足度が向上します。試してみましょう。' },
+  { id: 3, display_date: '2025-02-25', category: 'マネジメント', title: '1on1を充実させるコツ', content: '1on1では「最近どう？」よりも「今週一番チャレンジングだったことは？」のような具体的な問いかけが効果的です。' },
+  { id: 4, display_date: '2025-02-24', category: 'コミュニケーション', title: '「Yes, and」の技法', content: '相手の意見に対して「でも」ではなく「そうですね、さらに」と受け止めてから自分の意見を加えると、建設的な議論になります。' },
+  { id: 5, display_date: '2025-02-23', category: 'リーダーシップ', title: 'ビジョンの言語化', content: 'チームの方向性を示すとき、抽象的な言葉より具体的なエピソードや数字を使うと、メンバーの共感と行動につながります。' },
+  { id: 6, display_date: '2025-02-22', category: 'マネジメント', title: 'フィードバックのサンドイッチ法', content: '良い点→改善点→期待の順で伝えると、相手が前向きに受け取りやすくなります。ただし、形式的にならないよう誠実さが大切です。' },
+];
+
+const MOCK_MEMOS = [
+  { goal_id: 1, date: '2025-02-26', memo: '午後のプロジェクト会議で、山本さんの提案を最後まで聞いてからフィードバックした。結果的に良いアイデアが出た。', category: 'コミュニケーション' },
+  { goal_id: 1, date: '2025-02-25', memo: '朝会で佐藤さんが報告中、途中で口を挟みそうになったが我慢できた。佐藤さんが最後まで話したら、自分が想定していたのとは違う重要な情報が出てきた。', category: 'コミュニケーション' },
+  { goal_id: 2, date: '2025-02-24', memo: '佐藤さんとの1on1で、最近の悩みを聞けた。業務の優先度で困っていたので一緒に整理した。', category: 'マネジメント' },
+  { goal_id: 3, date: '2025-02-26', memo: '週次定例でアジェンダを最初に共有。参加者から「分かりやすい」と言われた。', category: 'リーダーシップ' },
+  { goal_id: 1, date: '2025-02-22', memo: 'クライアントとの打ち合わせで、相手の要望を最後まで聞いてから提案した。スムーズに合意できた。', category: 'コミュニケーション' },
+  { goal_id: 3, date: '2025-02-21', memo: '急な会議でもホワイトボードにゴールを書いてから始めた。議論がブレなかった。', category: 'リーダーシップ' },
 ];
 
 const PRESET_TEMPLATES = {
@@ -76,15 +86,7 @@ const PRESET_TEMPLATES = {
 const CATEGORIES = ['リーダーシップ', 'コミュニケーション', '問題解決', 'マネジメント', 'その他'];
 const FREQUENCIES = ['毎日', '週3回', '週1回'];
 const PERIODS = ['4週間', '8週間', '12週間'];
-
-const SUCCESS_MEMOS = [
-  { goalId: 1, date: '2025-02-26', memo: '午後のプロジェクト会議で、山本さんの提案を最後まで聞いてからフィードバックした。結果的に良いアイデアが出た。' },
-  { goalId: 1, date: '2025-02-25', memo: '朝会で佐藤さんが報告中、途中で口を挟みそうになったが我慢できた。佐藤さんが最後まで話したら、自分が想定していたのとは違う重要な情報が出てきた。' },
-  { goalId: 2, date: '2025-02-24', memo: '佐藤さんとの1on1で、最近の悩みを聞けた。業務の優先度で困っていたので一緒に整理した。' },
-  { goalId: 3, date: '2025-02-26', memo: '週次定例でアジェンダを最初に共有。参加者から「分かりやすい」と言われた。' },
-  { goalId: 1, date: '2025-02-22', memo: 'クライアントとの打ち合わせで、相手の要望を最後まで聞いてから提案した。スムーズに合意できた。' },
-  { goalId: 3, date: '2025-02-21', memo: '急な会議でもホワイトボードにゴールを書いてから始めた。議論がブレなかった。' },
-];
+const CHART_FILLS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 
 // ─── Category color helper ─────────────────────────────
 const categoryColor = (cat) => {
@@ -124,22 +126,105 @@ function ProgressRing({ percent, size = 120, stroke = 10 }) {
 
 // ─── Main Component ─────────────────────────────────────
 export default function BehaviorTracker() {
+  // ─── Connection & Auth state ──────────────────────────
+  const [isOnline, setIsOnline] = useState(false);
+  const [user, setUser] = useState(null);
+  const [showLogin, setShowLogin] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('tanaka@example.com');
+  const [loginPassword, setLoginPassword] = useState('password123');
+  const [loginError, setLoginError] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  // ─── App state ────────────────────────────────────────
   const [activeTab, setActiveTab] = useState('home');
-  const [goals, setGoals] = useState(INITIAL_GOALS);
+  const [goals, setGoals] = useState(MOCK_GOALS);
   const [checkins, setCheckins] = useState({});
   const [showCheckinComplete, setShowCheckinComplete] = useState(false);
   const [showGoalForm, setShowGoalForm] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
-  const [feedbacks, setFeedbacks] = useState(FEEDBACKS);
+  const [feedbacks, setFeedbacks] = useState(MOCK_FEEDBACKS);
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [showFeedbackRequest, setShowFeedbackRequest] = useState(false);
   const [todayNudge] = useState(NUDGE_MESSAGES[new Date().getDate() % NUDGE_MESSAGES.length]);
   const [newGoal, setNewGoal] = useState({ title: '', category: 'リーダーシップ', frequency: '毎日', period: '8週間' });
   const [checkinMemos, setCheckinMemos] = useState({});
+  const [tips, setTips] = useState(MOCK_TIPS);
+  const [weeklyData, setWeeklyData] = useState(MOCK_WEEKLY_DATA);
+  const [goalChartData, setGoalChartData] = useState(MOCK_GOAL_CHART);
+  const [successMemos, setSuccessMemos] = useState(MOCK_MEMOS);
+  const [statsOverallRate, setStatsOverallRate] = useState(null);
 
-  const overallRate = Math.round(goals.reduce((a, g) => a + g.progress, 0) / (goals.length || 1));
+  const overallRate = statsOverallRate ?? Math.round(goals.reduce((a, g) => a + g.progress, 0) / (goals.length || 1));
   const maxStreak = Math.max(...goals.map(g => g.streak), 0);
+
+  // ─── Initialize: check backend & auth ─────────────────
+  useEffect(() => {
+    (async () => {
+      const online = await api.checkBackend();
+      setIsOnline(online);
+      if (online && api.getToken()) {
+        try {
+          const me = await api.getMe();
+          setUser(me);
+          await loadAllData();
+        } catch {
+          // token expired
+          api.logout();
+        }
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  const loadAllData = useCallback(async () => {
+    try {
+      const [goalsData, fbData, tipsData, stats] = await Promise.all([
+        api.getGoals(),
+        api.getFeedback(),
+        api.getTips(),
+        api.getCheckinStats(),
+      ]);
+      setGoals(goalsData);
+      setFeedbacks(fbData);
+      setTips(tipsData);
+      if (stats.weeklyRates?.length) setWeeklyData(stats.weeklyRates);
+      if (stats.goalStats?.length) {
+        setGoalChartData(stats.goalStats.map((g, i) => ({ ...g, fill: CHART_FILLS[i % CHART_FILLS.length] })));
+      }
+      if (stats.memos?.length) setSuccessMemos(stats.memos);
+      if (stats.overallRate != null) setStatsOverallRate(stats.overallRate);
+    } catch (e) {
+      console.error('Failed to load data:', e);
+    }
+  }, []);
+
+  // ─── Auth handlers ────────────────────────────────────
+  const handleLogin = async () => {
+    setLoginError('');
+    try {
+      const data = await api.login(loginEmail, loginPassword);
+      setUser(data.user);
+      setShowLogin(false);
+      await loadAllData();
+    } catch (e) {
+      setLoginError(e.message);
+    }
+  };
+
+  const handleLogout = () => {
+    api.logout();
+    setUser(null);
+    setGoals(MOCK_GOALS);
+    setFeedbacks(MOCK_FEEDBACKS);
+    setTips(MOCK_TIPS);
+    setWeeklyData(MOCK_WEEKLY_DATA);
+    setGoalChartData(MOCK_GOAL_CHART);
+    setSuccessMemos(MOCK_MEMOS);
+    setStatsOverallRate(null);
+  };
+
+  const displayUser = user || MOCK_USER;
 
   // ─── Tab navigation ───────────────────────────────────
   const tabs = [
@@ -159,54 +244,152 @@ export default function BehaviorTracker() {
     setCheckinMemos(prev => ({ ...prev, [goalId]: memo }));
   };
 
-  const submitCheckin = () => {
+  const submitCheckin = async () => {
+    if (isOnline && user) {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const entries = goals.map(g => ({
+          goalId: g.id,
+          date: today,
+          status: checkins[g.id],
+          memo: checkinMemos[g.id] || null,
+        }));
+        await api.submitCheckins(entries);
+        await loadAllData();
+      } catch (e) {
+        console.error('Checkin submit failed:', e);
+      }
+    }
     setShowCheckinComplete(true);
+    setCheckins({});
+    setCheckinMemos({});
     setTimeout(() => setShowCheckinComplete(false), 3000);
   };
 
   const allCheckedIn = goals.every(g => checkins[g.id]);
 
   // ─── Goal management ──────────────────────────────────
-  const addGoal = () => {
+  const addGoal = async () => {
     if (!newGoal.title.trim()) return;
-    const goal = {
-      id: Date.now(),
-      ...newGoal,
-      progress: 0,
-      streak: 0,
-    };
-    setGoals(prev => [...prev, goal]);
+    if (isOnline && user) {
+      try {
+        const created = await api.createGoal(newGoal);
+        setGoals(prev => [...prev, created]);
+      } catch (e) {
+        console.error('Goal creation failed:', e);
+        return;
+      }
+    } else {
+      setGoals(prev => [...prev, { id: Date.now(), ...newGoal, progress: 0, streak: 0 }]);
+    }
     setNewGoal({ title: '', category: 'リーダーシップ', frequency: '毎日', period: '8週間' });
     setShowGoalForm(false);
   };
 
-  const applyTemplate = (templateName) => {
+  const applyTemplate = async (templateName) => {
     const templates = PRESET_TEMPLATES[templateName];
-    const newGoals = templates.map((t, i) => ({
-      id: Date.now() + i,
-      ...t,
-      progress: 0,
-      streak: 0,
-    }));
-    setGoals(prev => [...prev, ...newGoals]);
+    if (isOnline && user) {
+      try {
+        const created = await Promise.all(templates.map(t => api.createGoal(t)));
+        setGoals(prev => [...prev, ...created]);
+      } catch (e) {
+        console.error('Template apply failed:', e);
+        return;
+      }
+    } else {
+      const newGoals = templates.map((t, i) => ({ id: Date.now() + i, ...t, progress: 0, streak: 0 }));
+      setGoals(prev => [...prev, ...newGoals]);
+    }
     setShowTemplates(false);
   };
 
   // ─── Feedback handlers ────────────────────────────────
-  const handleLike = (fbId) => {
+  const handleLike = async (fbId) => {
+    if (isOnline && user) {
+      try {
+        const result = await api.likeFeedback(fbId);
+        setFeedbacks(prev => prev.map(f => f.id === fbId ? { ...f, likes: result.likes } : f));
+        return;
+      } catch (e) { console.error(e); }
+    }
     setFeedbacks(prev => prev.map(f => f.id === fbId ? { ...f, likes: f.likes + 1 } : f));
   };
 
-  const handleReply = (fbId) => {
+  const handleReply = async (fbId) => {
     if (!replyText.trim()) return;
+    if (isOnline && user) {
+      try {
+        const reply = await api.replyFeedback(fbId, replyText);
+        setFeedbacks(prev => prev.map(f =>
+          f.id === fbId ? { ...f, replies: [...f.replies, reply] } : f
+        ));
+        setReplyText('');
+        setReplyingTo(null);
+        return;
+      } catch (e) { console.error(e); }
+    }
     setFeedbacks(prev => prev.map(f =>
       f.id === fbId
-        ? { ...f, replies: [...f.replies, { from: USER.name, message: replyText, date: '2025-02-27' }] }
+        ? { ...f, replies: [...f.replies, { from_name: displayUser.name, message: replyText, created_at: new Date().toISOString().split('T')[0] }] }
         : f
     ));
     setReplyText('');
     setReplyingTo(null);
   };
+
+  const handleFeedbackRequest = async () => {
+    if (isOnline && user) {
+      try { await api.requestFeedback(); } catch (e) { console.error(e); }
+    }
+    setShowFeedbackRequest(true);
+  };
+
+  // ─── Loading screen ───────────────────────────────────
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-slate-500">読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Login screen ─────────────────────────────────────
+  const renderLogin = () => (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl p-6 w-full max-w-[380px] animate-scale-in shadow-xl">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-slate-800">ログイン</h2>
+          <button onClick={() => setShowLogin(false)} className="text-slate-400"><X size={20} /></button>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs text-slate-500 mb-1 block">メールアドレス</label>
+            <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
+              className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="tanaka@example.com" />
+          </div>
+          <div>
+            <label className="text-xs text-slate-500 mb-1 block">パスワード</label>
+            <input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
+              className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="password123"
+              onKeyDown={e => e.key === 'Enter' && handleLogin()} />
+          </div>
+          {loginError && (
+            <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{loginError}</p>
+          )}
+          <button onClick={handleLogin}
+            className="w-full py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors">
+            ログイン
+          </button>
+          <p className="text-[10px] text-slate-400 text-center">デモ: tanaka@example.com / password123</p>
+        </div>
+      </div>
+    </div>
+  );
 
   // ─── Render: Home Dashboard ───────────────────────────
   const renderHome = () => (
@@ -215,15 +398,34 @@ export default function BehaviorTracker() {
       <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-5 text-white shadow-lg">
         <div className="flex items-center justify-between mb-1">
           <div>
-            <p className="text-blue-200 text-sm">{USER.training}</p>
-            <h2 className="text-xl font-bold mt-1">{USER.name}さん</h2>
+            <p className="text-blue-200 text-sm">{displayUser.training_name}</p>
+            <h2 className="text-xl font-bold mt-1">{displayUser.name}さん</h2>
           </div>
-          <div className="relative">
-            <Bell size={22} className="text-blue-200" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center font-bold">2</span>
+          <div className="flex items-center gap-3">
+            {/* Connection indicator */}
+            <div className="flex items-center gap-1">
+              {isOnline ? <Wifi size={14} className="text-emerald-300" /> : <WifiOff size={14} className="text-blue-300" />}
+              <span className="text-[10px] text-blue-200">{isOnline ? (user ? 'API接続中' : 'API利用可能') : 'デモモード'}</span>
+            </div>
+            <div className="relative">
+              <Bell size={22} className="text-blue-200" />
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center font-bold">2</span>
+            </div>
           </div>
         </div>
-        <p className="text-blue-100 text-sm">研修6週目 ・ 行動定着フェーズ</p>
+        <div className="flex items-center justify-between">
+          <p className="text-blue-100 text-sm">研修6週目 ・ 行動定着フェーズ</p>
+          {isOnline && !user && (
+            <button onClick={() => setShowLogin(true)} className="text-xs bg-white/20 px-3 py-1 rounded-full flex items-center gap-1">
+              <LogIn size={12} /> ログイン
+            </button>
+          )}
+          {user && (
+            <button onClick={handleLogout} className="text-xs bg-white/20 px-3 py-1 rounded-full flex items-center gap-1">
+              <LogOut size={12} /> ログアウト
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Progress Ring + Streak */}
@@ -263,10 +465,7 @@ export default function BehaviorTracker() {
             <Target size={18} className="text-blue-600" />
             行動目標
           </h3>
-          <button
-            onClick={() => { setActiveTab('goals'); }}
-            className="text-xs text-blue-600 font-medium flex items-center gap-0.5"
-          >
+          <button onClick={() => setActiveTab('goals')} className="text-xs text-blue-600 font-medium flex items-center gap-0.5">
             設定 <ChevronRight size={14} />
           </button>
         </div>
@@ -281,9 +480,7 @@ export default function BehaviorTracker() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-800 truncate">{goal.title}</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${categoryColor(goal.category)}`}>
-                    {goal.category}
-                  </span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${categoryColor(goal.category)}`}>{goal.category}</span>
                   <span className="text-[10px] text-slate-400">{goal.frequency}</span>
                 </div>
               </div>
@@ -297,22 +494,24 @@ export default function BehaviorTracker() {
       </div>
 
       {/* Recent feedback */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3">
-          <MessageSquare size={18} className="text-blue-600" />
-          最新フィードバック
-        </h3>
-        <div className="bg-blue-50 rounded-xl p-3">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-7 h-7 rounded-full bg-blue-200 flex items-center justify-center">
-              <Users size={14} className="text-blue-700" />
+      {feedbacks.length > 0 && (
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3">
+            <MessageSquare size={18} className="text-blue-600" />
+            最新フィードバック
+          </h3>
+          <div className="bg-blue-50 rounded-xl p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-7 h-7 rounded-full bg-blue-200 flex items-center justify-center">
+                <Users size={14} className="text-blue-700" />
+              </div>
+              <span className="text-sm font-semibold text-slate-700">{feedbacks[0].from_name}</span>
+              <span className="text-[10px] text-slate-400 ml-auto">{feedbacks[0].created_at?.split('T')[0]}</span>
             </div>
-            <span className="text-sm font-semibold text-slate-700">{feedbacks[0].from}</span>
-            <span className="text-[10px] text-slate-400 ml-auto">{feedbacks[0].date}</span>
+            <p className="text-sm text-slate-600 leading-relaxed line-clamp-2">{feedbacks[0].message}</p>
           </div>
-          <p className="text-sm text-slate-600 leading-relaxed line-clamp-2">{feedbacks[0].message}</p>
         </div>
-      </div>
+      )}
     </div>
   );
 
@@ -324,7 +523,6 @@ export default function BehaviorTracker() {
         <button onClick={() => setActiveTab('home')} className="text-slate-400"><X size={22} /></button>
       </div>
 
-      {/* Existing goals */}
       <div className="space-y-3">
         {goals.map(goal => (
           <div key={goal.id} className="bg-white rounded-2xl p-4 shadow-sm">
@@ -341,7 +539,6 @@ export default function BehaviorTracker() {
                 <span className="text-sm font-bold text-blue-600">{goal.progress}%</span>
               </div>
             </div>
-            {/* Mini progress bar */}
             <div className="mt-3 h-1.5 bg-slate-100 rounded-full overflow-hidden">
               <div className="h-full rounded-full bg-blue-500 transition-all duration-500" style={{ width: `${goal.progress}%` }} />
             </div>
@@ -349,25 +546,19 @@ export default function BehaviorTracker() {
         ))}
       </div>
 
-      {/* Add goal buttons */}
       {goals.length < 5 && (
         <div className="space-y-2">
-          <button
-            onClick={() => { setShowGoalForm(true); setShowTemplates(false); }}
-            className="w-full py-3 rounded-xl border-2 border-dashed border-blue-300 text-blue-600 font-medium text-sm flex items-center justify-center gap-2 hover:bg-blue-50 transition-colors"
-          >
+          <button onClick={() => { setShowGoalForm(true); setShowTemplates(false); }}
+            className="w-full py-3 rounded-xl border-2 border-dashed border-blue-300 text-blue-600 font-medium text-sm flex items-center justify-center gap-2 hover:bg-blue-50 transition-colors">
             <Plus size={18} /> カスタム目標を追加
           </button>
-          <button
-            onClick={() => { setShowTemplates(true); setShowGoalForm(false); }}
-            className="w-full py-3 rounded-xl border-2 border-dashed border-emerald-300 text-emerald-600 font-medium text-sm flex items-center justify-center gap-2 hover:bg-emerald-50 transition-colors"
-          >
+          <button onClick={() => { setShowTemplates(true); setShowGoalForm(false); }}
+            className="w-full py-3 rounded-xl border-2 border-dashed border-emerald-300 text-emerald-600 font-medium text-sm flex items-center justify-center gap-2 hover:bg-emerald-50 transition-colors">
             <BookOpen size={18} /> テンプレートから選ぶ
           </button>
         </div>
       )}
 
-      {/* Template selector */}
       {showTemplates && (
         <div className="bg-white rounded-2xl p-4 shadow-sm animate-scale-in">
           <h3 className="font-semibold text-slate-700 mb-3">研修タイプ別テンプレート</h3>
@@ -383,31 +574,21 @@ export default function BehaviorTracker() {
         </div>
       )}
 
-      {/* New goal form */}
       {showGoalForm && (
         <div className="bg-white rounded-2xl p-4 shadow-sm animate-scale-in space-y-3">
           <h3 className="font-semibold text-slate-700">新しい行動目標</h3>
           <div>
             <label className="text-xs text-slate-500 mb-1 block">目標タイトル</label>
-            <input
-              type="text" placeholder="例：会議で必ず最初に発言する"
-              value={newGoal.title}
+            <input type="text" placeholder="例：会議で必ず最初に発言する" value={newGoal.title}
               onChange={e => setNewGoal(p => ({ ...p, title: e.target.value }))}
-              className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-            />
+              className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent" />
           </div>
           <div>
             <label className="text-xs text-slate-500 mb-1 block">カテゴリ</label>
             <div className="flex flex-wrap gap-2">
               {CATEGORIES.map(cat => (
-                <button key={cat}
-                  onClick={() => setNewGoal(p => ({ ...p, category: cat }))}
-                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
-                    newGoal.category === cat
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
+                <button key={cat} onClick={() => setNewGoal(p => ({ ...p, category: cat }))}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${newGoal.category === cat ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                   {cat}
                 </button>
               ))}
@@ -416,21 +597,15 @@ export default function BehaviorTracker() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-slate-500 mb-1 block">実践頻度</label>
-              <select
-                value={newGoal.frequency}
-                onChange={e => setNewGoal(p => ({ ...p, frequency: e.target.value }))}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
-              >
+              <select value={newGoal.frequency} onChange={e => setNewGoal(p => ({ ...p, frequency: e.target.value }))}
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400">
                 {FREQUENCIES.map(f => <option key={f}>{f}</option>)}
               </select>
             </div>
             <div>
               <label className="text-xs text-slate-500 mb-1 block">期間</label>
-              <select
-                value={newGoal.period}
-                onChange={e => setNewGoal(p => ({ ...p, period: e.target.value }))}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
-              >
+              <select value={newGoal.period} onChange={e => setNewGoal(p => ({ ...p, period: e.target.value }))}
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400">
                 {PERIODS.map(p => <option key={p}>{p}</option>)}
               </select>
             </div>
@@ -445,140 +620,105 @@ export default function BehaviorTracker() {
   );
 
   // ─── Render: Daily Check-in ───────────────────────────
-  const renderCheckin = () => (
-    <div className="space-y-4 animate-fade-in">
-      <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-5 text-white shadow-lg">
-        <div className="flex items-center gap-2 mb-1">
-          <Calendar size={18} />
-          <span className="text-emerald-100 text-sm">2025年2月27日（木）</span>
-        </div>
-        <h2 className="text-lg font-bold">今日のチェックイン</h2>
-        <p className="text-emerald-100 text-sm mt-1">各目標の実践状況を記録しましょう</p>
-      </div>
+  const renderCheckin = () => {
+    const today = new Date();
+    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日（${dayNames[today.getDay()]}）`;
 
-      {showCheckinComplete && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-center animate-scale-in">
-          <div className="text-4xl mb-2">🎉</div>
-          <p className="text-lg font-bold text-emerald-700">記録完了！</p>
-          <p className="text-sm text-emerald-600 mt-1">今日も振り返りお疲れさまでした。</p>
-          <p className="text-sm text-emerald-600">小さな積み重ねが大きな成長につながります。</p>
-          <div className="flex justify-center gap-1 mt-3">
-            {['🌟', '✨', '⭐', '💫', '🌟'].map((e, i) => (
-              <span key={i} className="animate-confetti text-xl" style={{ animationDelay: `${i * 0.15}s` }}>{e}</span>
-            ))}
+    return (
+      <div className="space-y-4 animate-fade-in">
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-5 text-white shadow-lg">
+          <div className="flex items-center gap-2 mb-1">
+            <Calendar size={18} />
+            <span className="text-emerald-100 text-sm">{dateStr}</span>
           </div>
+          <h2 className="text-lg font-bold">今日のチェックイン</h2>
+          <p className="text-emerald-100 text-sm mt-1">各目標の実践状況を記録しましょう</p>
         </div>
-      )}
 
-      <div className="space-y-3">
-        {goals.map((goal, idx) => {
-          const status = checkins[goal.id];
-          return (
-            <div key={goal.id} className="bg-white rounded-2xl p-4 shadow-sm animate-slide-up" style={{ animationDelay: `${idx * 0.1}s` }}>
-              <div className="flex items-start gap-3 mb-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                  status === 'done' ? 'bg-emerald-100' : status === 'skip' ? 'bg-slate-100' : status === 'fail' ? 'bg-red-50' : 'bg-blue-50'
-                }`}>
-                  {status === 'done' ? <Check size={16} className="text-emerald-600" />
-                    : status === 'skip' ? <Clock size={16} className="text-slate-400" />
-                    : status === 'fail' ? <AlertCircle size={16} className="text-red-400" />
-                    : <Target size={16} className="text-blue-500" />
-                  }
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-800">{goal.title}</p>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium mt-1 inline-block ${categoryColor(goal.category)}`}>
-                    {goal.category}
-                  </span>
-                </div>
-              </div>
-
-              {/* 3-choice buttons */}
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => handleCheckin(goal.id, 'done')}
-                  className={`py-2 rounded-xl text-xs font-medium transition-all ${
-                    status === 'done'
-                      ? 'bg-emerald-500 text-white shadow-sm scale-105'
-                      : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                  }`}
-                >
-                  ✅ 実践した
-                </button>
-                <button
-                  onClick={() => handleCheckin(goal.id, 'skip')}
-                  className={`py-2 rounded-xl text-xs font-medium transition-all ${
-                    status === 'skip'
-                      ? 'bg-slate-500 text-white shadow-sm scale-105'
-                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  ⏭️ 機会なし
-                </button>
-                <button
-                  onClick={() => handleCheckin(goal.id, 'fail')}
-                  className={`py-2 rounded-xl text-xs font-medium transition-all ${
-                    status === 'fail'
-                      ? 'bg-red-400 text-white shadow-sm scale-105'
-                      : 'bg-red-50 text-red-600 hover:bg-red-100'
-                  }`}
-                >
-                  💭 できず
-                </button>
-              </div>
-
-              {/* Memo field for done */}
-              {status === 'done' && (
-                <div className="mt-3 animate-scale-in">
-                  <textarea
-                    placeholder="どんな場面で実践しましたか？（任意）"
-                    value={checkinMemos[goal.id] || ''}
-                    onChange={e => handleCheckinMemo(goal.id, e.target.value)}
-                    className="w-full px-3 py-2 text-xs border border-emerald-200 rounded-xl bg-emerald-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-300 resize-none"
-                    rows={2}
-                  />
-                </div>
-              )}
-
-              {/* Reflection memo for fail */}
-              {status === 'fail' && (
-                <div className="mt-3 animate-scale-in">
-                  <textarea
-                    placeholder="振り返りメモ（任意）：次はどうすればできそう？"
-                    value={checkinMemos[goal.id] || ''}
-                    onChange={e => handleCheckinMemo(goal.id, e.target.value)}
-                    className="w-full px-3 py-2 text-xs border border-red-200 rounded-xl bg-red-50/50 focus:outline-none focus:ring-2 focus:ring-red-300 resize-none"
-                    rows={2}
-                  />
-                  <p className="text-[10px] text-slate-400 mt-1">💡 できなかった日も、振り返ること自体が成長です。</p>
-                </div>
-              )}
+        {showCheckinComplete && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-center animate-scale-in">
+            <div className="text-4xl mb-2">🎉</div>
+            <p className="text-lg font-bold text-emerald-700">記録完了！</p>
+            <p className="text-sm text-emerald-600 mt-1">今日も振り返りお疲れさまでした。</p>
+            <p className="text-sm text-emerald-600">小さな積み重ねが大きな成長につながります。</p>
+            <div className="flex justify-center gap-1 mt-3">
+              {['🌟', '✨', '⭐', '💫', '🌟'].map((e, i) => (
+                <span key={i} className="animate-confetti text-xl" style={{ animationDelay: `${i * 0.15}s` }}>{e}</span>
+              ))}
             </div>
-          );
-        })}
-      </div>
+          </div>
+        )}
 
-      {/* Submit button */}
-      <button
-        onClick={submitCheckin}
-        disabled={!allCheckedIn}
-        className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all ${
-          allCheckedIn
-            ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-200 animate-pulse-gentle'
-            : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-        }`}
-      >
-        {allCheckedIn ? '✨ チェックイン完了！' : `記録してください（残り${goals.filter(g => !checkins[g.id]).length}件）`}
-      </button>
-    </div>
-  );
+        <div className="space-y-3">
+          {goals.map((goal, idx) => {
+            const status = checkins[goal.id];
+            return (
+              <div key={goal.id} className="bg-white rounded-2xl p-4 shadow-sm animate-slide-up" style={{ animationDelay: `${idx * 0.1}s` }}>
+                <div className="flex items-start gap-3 mb-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                    status === 'done' ? 'bg-emerald-100' : status === 'skip' ? 'bg-slate-100' : status === 'fail' ? 'bg-red-50' : 'bg-blue-50'
+                  }`}>
+                    {status === 'done' ? <Check size={16} className="text-emerald-600" />
+                      : status === 'skip' ? <Clock size={16} className="text-slate-400" />
+                      : status === 'fail' ? <AlertCircle size={16} className="text-red-400" />
+                      : <Target size={16} className="text-blue-500" />}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-slate-800">{goal.title}</p>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium mt-1 inline-block ${categoryColor(goal.category)}`}>{goal.category}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <button onClick={() => handleCheckin(goal.id, 'done')}
+                    className={`py-2 rounded-xl text-xs font-medium transition-all ${status === 'done' ? 'bg-emerald-500 text-white shadow-sm scale-105' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}>
+                    ✅ 実践した
+                  </button>
+                  <button onClick={() => handleCheckin(goal.id, 'skip')}
+                    className={`py-2 rounded-xl text-xs font-medium transition-all ${status === 'skip' ? 'bg-slate-500 text-white shadow-sm scale-105' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>
+                    ⏭️ 機会なし
+                  </button>
+                  <button onClick={() => handleCheckin(goal.id, 'fail')}
+                    className={`py-2 rounded-xl text-xs font-medium transition-all ${status === 'fail' ? 'bg-red-400 text-white shadow-sm scale-105' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}>
+                    💭 できず
+                  </button>
+                </div>
+
+                {status === 'done' && (
+                  <div className="mt-3 animate-scale-in">
+                    <textarea placeholder="どんな場面で実践しましたか？（任意）" value={checkinMemos[goal.id] || ''}
+                      onChange={e => handleCheckinMemo(goal.id, e.target.value)}
+                      className="w-full px-3 py-2 text-xs border border-emerald-200 rounded-xl bg-emerald-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-300 resize-none" rows={2} />
+                  </div>
+                )}
+
+                {status === 'fail' && (
+                  <div className="mt-3 animate-scale-in">
+                    <textarea placeholder="振り返りメモ（任意）：次はどうすればできそう？" value={checkinMemos[goal.id] || ''}
+                      onChange={e => handleCheckinMemo(goal.id, e.target.value)}
+                      className="w-full px-3 py-2 text-xs border border-red-200 rounded-xl bg-red-50/50 focus:outline-none focus:ring-2 focus:ring-red-300 resize-none" rows={2} />
+                    <p className="text-[10px] text-slate-400 mt-1">💡 できなかった日も、振り返ること自体が成長です。</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <button onClick={submitCheckin} disabled={!allCheckedIn}
+          className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all ${allCheckedIn ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-200 animate-pulse-gentle' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>
+          {allCheckedIn ? '✨ チェックイン完了！' : `記録してください（残り${goals.filter(g => !checkins[g.id]).length}件）`}
+        </button>
+      </div>
+    );
+  };
 
   // ─── Render: Analysis ─────────────────────────────────
   const renderAnalysis = () => (
     <div className="space-y-4 animate-fade-in">
       <h2 className="text-lg font-bold text-slate-800">振り返り・分析</h2>
 
-      {/* Weekly trend */}
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <h3 className="font-semibold text-slate-700 mb-1 flex items-center gap-2">
           <TrendingUp size={16} className="text-blue-600" />
@@ -587,21 +727,18 @@ export default function BehaviorTracker() {
         <p className="text-xs text-slate-400 mb-3">過去6週間</p>
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={WEEKLY_DATA}>
+            <LineChart data={weeklyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="week" tick={{ fontSize: 11 }} stroke="#94a3b8" />
               <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="#94a3b8" />
-              <Tooltip
-                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '12px' }}
-                formatter={(value) => [`${value}%`, '実践率']}
-              />
+              <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '12px' }}
+                formatter={(value) => [`${value}%`, '実践率']} />
               <Line type="monotone" dataKey="rate" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 4, fill: '#3b82f6' }} activeDot={{ r: 6 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Goal comparison */}
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <h3 className="font-semibold text-slate-700 mb-1 flex items-center gap-2">
           <BarChart3 size={16} className="text-blue-600" />
@@ -610,16 +747,14 @@ export default function BehaviorTracker() {
         <p className="text-xs text-slate-400 mb-3">現在の進捗</p>
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={GOAL_CHART_DATA} barSize={36}>
+            <BarChart data={goalChartData} barSize={36}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#94a3b8" />
               <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="#94a3b8" />
-              <Tooltip
-                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '12px' }}
-                formatter={(value) => [`${value}%`, '達成率']}
-              />
+              <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '12px' }}
+                formatter={(value) => [`${value}%`, '達成率']} />
               <Bar dataKey="rate" radius={[8, 8, 0, 0]}>
-                {GOAL_CHART_DATA.map((entry, i) => (
+                {goalChartData.map((entry, i) => (
                   <Cell key={i} fill={entry.fill} />
                 ))}
               </Bar>
@@ -628,7 +763,6 @@ export default function BehaviorTracker() {
         </div>
       </div>
 
-      {/* Weekly summary */}
       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 shadow-sm border border-blue-100">
         <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
           <Award size={16} className="text-blue-600" />
@@ -646,7 +780,6 @@ export default function BehaviorTracker() {
         </div>
       </div>
 
-      {/* Success pattern memos */}
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
           <Star size={16} className="text-amber-500" />
@@ -654,14 +787,12 @@ export default function BehaviorTracker() {
         </h3>
         <p className="text-xs text-slate-400 mb-3">あなたの成功パターンを振り返りましょう</p>
         <div className="space-y-2">
-          {SUCCESS_MEMOS.map((memo, i) => (
+          {successMemos.map((memo, i) => (
             <div key={i} className="p-3 bg-slate-50 rounded-xl">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-[10px] text-slate-400">{memo.date}</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                  categoryColor(goals.find(g => g.id === memo.goalId)?.category || '')
-                }`}>
-                  {goals.find(g => g.id === memo.goalId)?.category || ''}
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${categoryColor(memo.category || goals.find(g => g.id === memo.goal_id)?.category || '')}`}>
+                  {memo.category || goals.find(g => g.id === memo.goal_id)?.category || ''}
                 </span>
               </div>
               <p className="text-xs text-slate-700 leading-relaxed">{memo.memo}</p>
@@ -677,10 +808,8 @@ export default function BehaviorTracker() {
     <div className="space-y-4 animate-fade-in">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-slate-800">フィードバック</h2>
-        <button
-          onClick={() => setShowFeedbackRequest(true)}
-          className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-full font-medium flex items-center gap-1 hover:bg-blue-700 transition-colors"
-        >
+        <button onClick={handleFeedbackRequest}
+          className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-full font-medium flex items-center gap-1 hover:bg-blue-700 transition-colors">
           <Send size={12} /> FB依頼
         </button>
       </div>
@@ -708,20 +837,19 @@ export default function BehaviorTracker() {
                 <Users size={16} className="text-white" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-slate-800">{fb.from}</p>
-                <p className="text-[10px] text-slate-400">{fb.date}</p>
+                <p className="text-sm font-semibold text-slate-800">{fb.from_name}</p>
+                <p className="text-[10px] text-slate-400">{fb.created_at?.split('T')[0]}</p>
               </div>
             </div>
             <p className="text-sm text-slate-700 leading-relaxed mb-3">{fb.message}</p>
 
-            {/* Replies */}
-            {fb.replies.length > 0 && (
+            {fb.replies?.length > 0 && (
               <div className="ml-6 space-y-2 mb-3">
                 {fb.replies.map((r, i) => (
                   <div key={i} className="bg-slate-50 rounded-xl p-3">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-semibold text-slate-700">{r.from}</span>
-                      <span className="text-[10px] text-slate-400">{r.date}</span>
+                      <span className="text-xs font-semibold text-slate-700">{r.from_name}</span>
+                      <span className="text-[10px] text-slate-400">{r.created_at?.split('T')[0]}</span>
                     </div>
                     <p className="text-xs text-slate-600">{r.message}</p>
                   </div>
@@ -729,7 +857,6 @@ export default function BehaviorTracker() {
               </div>
             )}
 
-            {/* Actions */}
             <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
               <button onClick={() => handleLike(fb.id)} className="flex items-center gap-1.5 text-slate-500 hover:text-blue-600 transition-colors">
                 <ThumbsUp size={14} />
@@ -742,16 +869,12 @@ export default function BehaviorTracker() {
               </button>
             </div>
 
-            {/* Reply input */}
             {replyingTo === fb.id && (
               <div className="mt-3 flex gap-2 animate-scale-in">
-                <input
-                  type="text" placeholder="返信を入力..."
-                  value={replyText}
+                <input type="text" placeholder="返信を入力..." value={replyText}
                   onChange={e => setReplyText(e.target.value)}
                   className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  onKeyDown={e => e.key === 'Enter' && handleReply(fb.id)}
-                />
+                  onKeyDown={e => e.key === 'Enter' && handleReply(fb.id)} />
                 <button onClick={() => handleReply(fb.id)} className="bg-blue-600 text-white px-3 py-2 rounded-xl hover:bg-blue-700 transition-colors">
                   <Send size={14} />
                 </button>
@@ -768,37 +891,33 @@ export default function BehaviorTracker() {
     <div className="space-y-4 animate-fade-in">
       <h2 className="text-lg font-bold text-slate-800">ナッジ・Tips</h2>
 
-      {/* Today's tip (featured) */}
-      <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 shadow-sm border border-amber-200">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="bg-amber-200 rounded-full p-1.5">
-            <Sparkles size={16} className="text-amber-700" />
+      {tips.length > 0 && (
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 shadow-sm border border-amber-200">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="bg-amber-200 rounded-full p-1.5">
+              <Sparkles size={16} className="text-amber-700" />
+            </div>
+            <span className="text-xs font-bold text-amber-700">今日のTips</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ml-auto ${categoryColor(tips[0].category)}`}>{tips[0].category}</span>
           </div>
-          <span className="text-xs font-bold text-amber-700">今日のTips</span>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ml-auto ${categoryColor(TIPS_LIST[0].category)}`}>
-            {TIPS_LIST[0].category}
-          </span>
+          <h3 className="text-base font-bold text-slate-800 mb-2">{tips[0].title}</h3>
+          <p className="text-sm text-slate-700 leading-relaxed">{tips[0].content}</p>
         </div>
-        <h3 className="text-base font-bold text-slate-800 mb-2">{TIPS_LIST[0].title}</h3>
-        <p className="text-sm text-slate-700 leading-relaxed">{TIPS_LIST[0].content}</p>
-      </div>
+      )}
 
-      {/* Archive */}
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
           <Archive size={16} className="text-slate-500" />
           過去のTipsアーカイブ
         </h3>
         <div className="space-y-3">
-          {TIPS_LIST.slice(1).map(tip => (
+          {tips.slice(1).map(tip => (
             <details key={tip.id} className="group">
               <summary className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors list-none">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-[10px] text-slate-400">{tip.date}</span>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${categoryColor(tip.category)}`}>
-                      {tip.category}
-                    </span>
+                    <span className="text-[10px] text-slate-400">{tip.display_date}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${categoryColor(tip.category)}`}>{tip.category}</span>
                   </div>
                   <p className="text-sm font-medium text-slate-700">{tip.title}</p>
                 </div>
@@ -830,27 +949,18 @@ export default function BehaviorTracker() {
   return (
     <div className="min-h-screen bg-slate-50 flex justify-center">
       <div className="w-full max-w-[430px] relative pb-20">
-        {/* Scrollable content */}
         <div className="px-4 pt-4 pb-4">
           {renderContent()}
         </div>
 
-        {/* Bottom tab navigation */}
         <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t border-slate-200 px-2 py-1 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
           <div className="flex items-center justify-around">
             {tabs.map(tab => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex flex-col items-center py-2 px-3 rounded-xl transition-all ${
-                    isActive
-                      ? 'text-blue-600'
-                      : 'text-slate-400 hover:text-slate-600'
-                  }`}
-                >
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                  className={`flex flex-col items-center py-2 px-3 rounded-xl transition-all ${isActive ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
                   <div className={`p-1 rounded-lg transition-all ${isActive ? 'bg-blue-50' : ''}`}>
                     <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} />
                   </div>
@@ -861,6 +971,8 @@ export default function BehaviorTracker() {
           </div>
         </nav>
       </div>
+
+      {showLogin && renderLogin()}
     </div>
   );
 }
