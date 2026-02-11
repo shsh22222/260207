@@ -9,7 +9,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "server": "node server/index.js",
-    "dev:full": "node server/index.js & vite"
+    "dev:full": "node server/index.js & vite",
+    "build:render": "VITE_BASE=/ vite build",
+    "start": "node server/index.js"
   },
   "repository": {
     "type": "git",

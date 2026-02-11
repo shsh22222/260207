@@ -2,14 +2,21 @@ import express from 'express';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import db from './database.js';
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'behavior-tracker-secret-key';
 
 app.use(cors());
 app.use(express.json());
+
+// ─── Serve built frontend in production ─────────────────
+const distPath = join(__dirname, '..', 'dist');
+app.use(express.static(distPath));
 
 // ─── Auth middleware ────────────────────────────────────
 function auth(req, res, next) {
@@ -299,6 +306,11 @@ app.get('/api/tips/today', auth, (req, res) => {
 // ─── Health check ───────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// ─── SPA fallback (serve index.html for non-API routes) ─
+app.get('/{*path}', (req, res) => {
+  res.sendFile(join(distPath, 'index.html'));
 });
 
 // ─── Start server ───────────────────────────────────────

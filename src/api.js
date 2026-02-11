@@ -1,4 +1,7 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Same-origin on production (Render), localhost:3001 on dev
+const API_URL = import.meta.env.VITE_API_URL ?? (
+  window.location.hostname === 'localhost' ? 'http://localhost:3001' : ''
+);
 
 function getToken() {
   return localStorage.getItem('bt_token');
