@@ -2,7 +2,7 @@
   "name": "260207",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "server/index.js",
   "type": "module",
   "scripts": {
     "dev": "vite",
