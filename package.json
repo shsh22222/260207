@@ -2,14 +2,16 @@
   "name": "260207",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "server/index.js",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "server": "node server/index.js",
-    "dev:full": "node server/index.js & vite"
+    "dev:full": "node server/index.js & vite",
+    "build:render": "VITE_BASE=/ vite build",
+    "start": "node server/index.js"
   },
   "repository": {
     "type": "git",
